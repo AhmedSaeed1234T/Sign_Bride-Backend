@@ -1,0 +1,118 @@
+generator client{
+    provider = "prisma-client-js"
+}
+datasource db{
+    provider = "mysql"
+    url = env("DATABASE_URL")
+}
+model Role{
+    id Int @id @default(autoincrement())
+    name String @unique @db.VarChar(50)
+    description String? @db.Text
+    createdAt DateTime @default(now()) @map("created_at")
+    users User[]
+    @@map("roles")
+}
+// relationship one to many between institution and user
+model Institution{
+    id Int @id @default(autoincrement())
+    name String @unique @db.VarChar(150)
+    logo String? @db.VarChar(255)
+    address String? @db.Text
+    phone String?  @db.VarChar(20)
+    email String? @db.VarChar(150) @unique
+    createdAt DateTime @default(now()) @map("created_at")
+    users User[]
+    @@map("institutions")
+}
+model User{
+    id  Int @id @default(autoincrement())
+    roleId Int @map("role_id")
+    institutionId Int? @map("institution_id")
+    fullName String @db.VarChar(150) @map("full_name")
+    email String @unique @db.VarChar(150)
+    password String @db.VarChar(255)
+    phone String? @db.VarChar(20)
+    avatar String? @db.VarChar(255)
+    status UserStatus @default(ACTIVE)
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+    role Role @relation(fields: [roleId], references: [id])
+    institution Institution? @relation(fields: [institutionId], references: [id])
+    createdConversations Conversation[]           @relation("ConversationCreator")
+    participants         ConversationParticipant[]
+    messages             Message[]
+    notifications        Notification[]
+
+  @@map("users")
+}
+model Conversation{
+    id Int @id @default(autoincrement())
+    createdBy Int @map("created_by")
+    title String? @db.VarChar(150)
+    mode ConversationMode 
+    language String @db.VarChar(20)
+    status ConversationStatus @default(ACTIVE)
+    startedAt DateTime @default(now()) @map("started_at")
+    endedAt DateTime? @map("ended_at")
+    creator User @relation("ConversationCreator", fields: [createdBy], references: [ id])
+    participants ConversationParticipant[]
+    messages Message[]
+    @@map("conversations")
+}
+// relationship many to many between user and conversation 
+model ConversationParticipant{
+    id Int @id @default(autoincrement())
+    conversationId Int @map("conversation_id")
+    userId Int @map("user_id")
+    joinedAt DateTime @default(now()) @map("joined_at")
+    conversation Conversation @relation(fields:[conversationId], references:[id])
+    user User @relation(fields:[userId], references:[id])
+    @@unique([conversationId, userId])
+    @@map("conversation_participants")
+}
+model Message{
+    id Int @id @default(autoincrement())
+    conversationId Int @map("conversation_id")
+    senderId Int @map("sender_id")
+    messageType MessageType @map("message_type")
+    originalText String? @db.Text @map("original_text")
+    translatedText String? @db.Text @map("translated_text")
+    mediaUrl String? @db.VarChar(255) @map("media_url")
+    createdAt DateTime @default(now()) @map("created_at")
+    conversation Conversation @relation(fields:[conversationId], references:[id])
+    sender User @relation(fields:[senderId], references:[id])
+    translationLogs TranslationLog[]
+    @@map("messages")
+}
+
+enum UserStatus{
+    ACTIVE
+    INACTIVE
+    BLOCKED
+}
+enum ConversationMode{
+    TEXT_TO_SIGN
+    SIGN_TO_TEXT
+    TWO_WAY
+}
+enum ConversationStatus{
+    ACTIVE
+    ENDED
+}
+enum MessageType{
+    TEXT
+    SIGN
+    SPEECH
+}
+enum TranslationType{
+    TEXT_TO_SIGN
+    SIGN_TO_TEXT
+    SPEECH_TO_SIGN
+    SIGN_TO_SPEECH
+}
+enum TranslationStatus{
+    SUCCESS
+    FAILED
+    PROCESSING
+}
