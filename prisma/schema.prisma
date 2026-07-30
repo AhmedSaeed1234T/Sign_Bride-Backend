@@ -85,6 +85,30 @@ model Message{
     translationLogs TranslationLog[]
     @@map("messages")
 }
+model TranslationLog{
+    id Int @id @default(autoincrement())
+    messageId Int @map("message_id")
+    translationType TranslationType @map("translation_type")
+    sourceLanguage String @db.VarChar(30) @map("source_language")
+    targetLanguage String @db.VarChar(30) @map("target_language")
+    aiLatency Float? @map("ai_latency")
+    aiAccuracy Float? @map("ai_accuracy")
+    status TranslationStatus
+    createdAt DateTime @default(now()) @map("created_at")
+    message Message @relation(fields: [messageId] , references: [id])
+    @@map("translation_logs")
+
+}
+model Notification{
+    id Int @id @default(autoincrement())
+    userId Int @map("user_id")
+    title String @db.VarChar(150)
+    body String @db.Text
+    isRead Boolean @default(false) @map("is_read")
+    createdAt DateTime @default(now()) @map("created_at")
+    user User @relation(fields: [userId] , references: [id])
+    @@map("notifications")
+}
 
 enum UserStatus{
     ACTIVE
